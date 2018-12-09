@@ -340,7 +340,7 @@ void print_payload(const uint8_t *pkt)
             + sizeof(uint16_t)         /* Flags */
             + sizeof(uint64_t);        /* Nonce */
 
-        step = 16; /* IP6v address size. */
+        step = sizeof(struct in6_addr); /* IP6v address size. */
         cur_pos = addr_bin;
         while(cur_pos < end_pos)
         {
@@ -349,14 +349,6 @@ void print_payload(const uint8_t *pkt)
             printf("Dest: %s\n", full_ip6_addr);
             cur_pos += step;
         }
-#if 0
-        while(cur_pos < end_pos)
-        {
-            full_format_ip6_addr(full_ip6_addr, cur_pos);
-            printf("Data: %s\n", full_ip6_addr);
-            cur_pos += step;
-        }
-#endif
 
         printf("\n");
     }

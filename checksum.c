@@ -47,7 +47,14 @@ int is_icmp6_cksum_ok(const uint8_t *pkt)
     uint16_t cksum;
     int is_cksum_ok;
 
-    cksum = ntohs(icmpv6checksum(&ip6_hdr->ip6_src, &ip6_hdr->ip6_dst, htons(ip6_hdr->ip6_plen), (uint16_t *)icmp6_hdr));
+    cksum = ntohs(
+                icmpv6checksum(
+                    &ip6_hdr->ip6_src,
+                    &ip6_hdr->ip6_dst,
+                    htons(ip6_hdr->ip6_plen),
+                    (uint16_t *)icmp6_hdr
+                )
+            );
     is_cksum_ok = cksum == 0;
 
     return is_cksum_ok;
