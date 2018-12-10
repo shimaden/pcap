@@ -354,18 +354,51 @@ void print_payload(const uint8_t *pkt)
     }
 }
 
+static void print_nd_information_reply(const uint8_t *data)
+{
+    const struct ip6_hdr *ip6_hdr;
+    int step;
+    uint16_t ip6_len;
+    const uint8_t *cur_pos;
+    const uint8_t *end_pos;
+    const uint8_t *addr_bin; 
+    char full_ip6_addr[40];
+
+    ip6_hdr   = (struct ip6_hdr *)(data + sizeof(struct ether_header));
+    ip6_len = ntohs(ip6_hdr->ip6_plen);
+    end_pos = (uint8_t *)ip6_hdr + sizeof(struct ip6_hdr) + ip6_len;
+    addr_bin= (uint8_t *)ip6_hdr 
+            + sizeof(struct ip6_hdr)   /* IPv6 header */
+            + sizeof(uint8_t)          /* Type */
+            + sizeof(uint8_t)          /* Code */
+            + sizeof(uint16_t)         /* Checksum */
+            + sizeof(uint16_t)         /* QType */
+            + sizeof(uint16_t)         /* Flags */
+            + sizeof(uint64_t);        /* Nonce */
+
+    step = sizeof(struct nd_node_addr); /* TTL + IP6v address size. */
+    cur_pos = addr_bin;
+    while(cur_pos < end_pos)
+    {
+        const struct nd_node_addr *nd_node_addr = (struct nd_node_addr *)cur_pos;
+        full_format_ip6_addr(full_ip6_addr, nd_node_addr->ip6_addr);
+        printf("%d: Src : 0x%08X %s\n", g_packets_captured, ntohl(nd_node_addr->ttl), full_ip6_addr);
+        cur_pos += step;
+    }
+
+}
+
 /*
  * user : pass a user argument
  * h    : the packet time stamp and lengths
- * bytes: data from packet
+ * data: data from packet
  * struct pcap_pkthdr {
  *     struct timeval ts;  time stamp
  *     bpf_u_int32 caplen; length of portion present actually captured.
  *     bpf_u_int32 len;    length of the packet off the wire.
  * };
  */
-
-void print_packet(uint8_t *user, const struct pcap_pkthdr *h, const uint8_t *bytes)
+void print_packet(uint8_t *user, const struct pcap_pkthdr *h, const uint8_t *data)
 {
     const char *fmt = "%02d:%02d:%02d.%06u";
     char tsbuf[TS_BUF_SIZE];
@@ -377,17 +410,19 @@ void print_packet(uint8_t *user, const struct pcap_pkthdr *h, const uint8_t *byt
     const struct ip6_hdr *ip6_hdr;
     const struct icmp6_hdr *icmp6_hdr;
     int is_icmp6_pkt;
+    int is_nd_information_reply = user[0];
 
     ++g_packets_captured;
 
     if(h->caplen != h->len)
     {
-        printf("h->caplen (%d) != h->len (%d). Currently not supported.\n", h->caplen, h->len);
+        fprintf(stderr, "h->caplen (%d) != h->len (%d). Currently not supported.\n",
+                h->caplen, h->len);
         return;
     }
 
-    ip6_hdr   = (struct ip6_hdr *)(bytes + sizeof(struct ether_header));
-    icmp6_hdr = (struct icmp6_hdr *)(bytes + sizeof(struct ether_header) + sizeof(struct ip6_hdr));
+    ip6_hdr   = (struct ip6_hdr *)(data + sizeof(struct ether_header));
+    icmp6_hdr = (struct icmp6_hdr *)(data + sizeof(struct ether_header) + sizeof(struct ip6_hdr));
 
     sec = (h->ts.tv_sec + g_timezone_offset) % 86400;
     sprintf(tsbuf, fmt, sec / 3600, (sec % 3600) / 60, sec % 60, usec);
@@ -396,6 +431,15 @@ void print_packet(uint8_t *user, const struct pcap_pkthdr *h, const uint8_t *byt
     is_icmp6_pkt = is_icmp6((const uint8_t *)ip6_hdr);
     proto = is_icmp6_pkt ? "ICMPv6" : "Other";
     icmp6_type = icmp6_type_name(icmp6_hdr->icmp6_type);
+
+    if(is_nd_information_reply)
+    {
+        if(is_node_information_reply((uint8_t *)ip6_hdr))
+        {
+            print_nd_information_reply(data);
+        }
+        return;
+    }
 
     printf("[[[ PACKET ]]]\n");
     printf("%s: %s %s (caplen: %d)\n", tsbuf, proto, icmp6_type, h->caplen);
