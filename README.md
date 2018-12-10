@@ -5,9 +5,13 @@ Learning libpcap
 Capture ICMPv6 packets with libpcap.
 
 ## Usage
-pcap &lt;iface>
+pcap [OPTION] &lt;iface>
   
-  Ex) pcap eth0
+  Ex)
+  
+  pcap eth0
+
+  pcap ND_INFORMATION_REPLY eth0
 
 You will need root authority.
 
