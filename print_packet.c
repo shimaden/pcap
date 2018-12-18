@@ -170,6 +170,23 @@ static const char *icmp6_type_name(int type)
     }
 }
 
+static char *mac_addr_str(const uint8_t *mac_addr, char buf[18])
+{
+    sprintf(buf, "%02X:%02X:%02X:%02X:%02X:%02X",
+                 mac_addr[0], mac_addr[1], mac_addr[2],
+                 mac_addr[3], mac_addr[4], mac_addr[5]);
+    return buf;
+}
+
+static void print_ether_header(const uint8_t *pkt)
+{
+    const struct ether_header *eth_hdr = (struct ether_header *)pkt;
+    char mac_addr_buf[18];
+    printf("Destination        : %s\n", mac_addr_str(eth_hdr->ether_dhost, mac_addr_buf));
+    printf("Source             : %s\n", mac_addr_str(eth_hdr->ether_shost, mac_addr_buf));
+    printf("Type               : 0x%04X\n", ntohs(eth_hdr->ether_type));
+}
+
 static void print_ip6_header(const uint8_t *pkt)
 {
     const struct ip6_hdr *ip6_hdr = (struct ip6_hdr *)pkt;
@@ -447,6 +464,9 @@ void print_packet(uint8_t *user, const struct pcap_pkthdr *h, const uint8_t *dat
     if(ip_ver == 6)
     {
         printf("===== IPv6 =====\n");
+        printf("----- Ethernet -----\n");
+        print_ether_header(data);
+        printf("----- IPv6 -----\n");
         print_ip6_header((uint8_t *)ip6_hdr);
         if(is_icmp6_pkt)
         {
