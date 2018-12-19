@@ -9,7 +9,7 @@ pcap: $(OBJS)
 	gcc -o $(EXE) -lpcap $(OBJS)
 
 .c.o:
-	gcc -Wall -o $@ -c $<
+	gcc -Wall -O2 -g -o $@ -c $<
 
 install:
 	install -o root -g root -m 4755 $(EXE) $(DEST)

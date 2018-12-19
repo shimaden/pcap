@@ -78,10 +78,6 @@ uint16_t icmp6checksum(const uint8_t *packet)
     sum += ones_complement(ip6_hdr->ip6_src.s6_addr16, sizeof(ip6_hdr->ip6_src.s6_addr16));
     sum += ones_complement(ip6_hdr->ip6_dst.s6_addr16, sizeof(ip6_hdr->ip6_dst.s6_addr16));
     sum += ones_complement(&ip6_hdr->ip6_plen, sizeof(ip6_hdr->ip6_plen));
-#if 0
-    const uint8_t next_hdr[2] = {IPPROTO_ICMPV6, 0};
-    sum += ones_complement((uint16_t *)next_hdr, 1, 1);
-#endif
     sum += IPPROTO_ICMPV6;
 
     /* ICMPv6 header */
