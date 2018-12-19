@@ -258,19 +258,24 @@ static void print_icmp6_header(const uint8_t *pkt)
     uint64_t buf64;
     uint64_t nonce;
     char flags_str[20];
-    int is_cksum_ok;
     uint16_t cksum;
 
     icmp6_hdr = (struct icmp6_hdr *)(pkt + sizeof(struct ip6_hdr));
 
     cksum = icmp6checksum(pkt);
-    //is_cksum_ok = is_icmp6_cksum_ok(pkt);
 
     printf("Type               : %d (%s)\n", icmp6_hdr->icmp6_type,
                                    icmp6_type_name(icmp6_hdr->icmp6_type));
     printf("Code               : %0d\n", ntohs(icmp6_hdr->icmp6_code));
-    printf("Check sum          : 0x%04X %s\n", ntohs(icmp6_hdr->icmp6_cksum),
-                                               is_cksum_ok ? "OK" : "Mismatch");
+    if(cksum == ntohs(icmp6_hdr->icmp6_cksum))
+    {
+        printf("Check sum          : 0x%04X OK\n", ntohs(icmp6_hdr->icmp6_cksum));
+    }
+    else
+    {
+        printf("Check sum          : 0x%04X Mismatch!! 0x%04X is correct.\n",
+                                     ntohs(icmp6_hdr->icmp6_cksum), cksum);
+    }
     if(is_echo(pkt))
     {
         printf("ID                 : 0x%04X\n", ntohs(icmp6_hdr->icmp6_id));

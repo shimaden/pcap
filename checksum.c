@@ -22,8 +22,14 @@ register unsigned short *w = addr;
 sum += ODDBYTE(*(unsigned char *)w);    /* le16toh() may be unavailable on old systems */
 #endif
 
+#include <stdio.h>
+
 /* The sum of ene's complement is independent on byte order. */
 
+/* data:
+ *   (as byte stream): HH LL HH LL ...
+ *   (as uint16_t   ): LL HH LL HH ... (in little endian)
+ */
 static inline uint16_t ones_complement(const uint16_t *data, int bytes)
 {
     register uint32_t        sum    = 0;
@@ -33,7 +39,7 @@ static inline uint16_t ones_complement(const uint16_t *data, int bytes)
     /* Sum up by 2 bytes. */
     for( ; bytes_ > 1 ; bytes_ -= 2)
     {
-        sum += ntohs(*data_);
+        sum += ntohs(*data_);  /* sum: HH LL in little endian */
         ++data_;
         if(sum & 0x80000000)
         {
@@ -44,7 +50,8 @@ static inline uint16_t ones_complement(const uint16_t *data, int bytes)
     /* If the data has odd bytes. */
     if(bytes_ == 1)
     {
-        sum += *(uint8_t *)data_;
+        const uint8_t b = *((uint8_t *)data_ + 0);
+        sum += ntohs(b);
     }
 
     /* Fold overflow. */
@@ -67,12 +74,15 @@ uint16_t icmp6checksum(const uint8_t *packet)
     icmp6_hdr->icmp6_cksum = 0;
 
     /* IPv6 header */
-    const uint8_t next_hdr = IPPROTO_ICMPV6;
     register uint32_t sum = 0;
-    sum += ones_complement(&ip6_hdr->ip6_plen, sizeof(ip6_hdr->ip6_plen));
-    sum += ones_complement((uint16_t *)&next_hdr, 1);
     sum += ones_complement(ip6_hdr->ip6_src.s6_addr16, sizeof(ip6_hdr->ip6_src.s6_addr16));
     sum += ones_complement(ip6_hdr->ip6_dst.s6_addr16, sizeof(ip6_hdr->ip6_dst.s6_addr16));
+    sum += ones_complement(&ip6_hdr->ip6_plen, sizeof(ip6_hdr->ip6_plen));
+#if 0
+    const uint8_t next_hdr[2] = {IPPROTO_ICMPV6, 0};
+    sum += ones_complement((uint16_t *)next_hdr, 1, 1);
+#endif
+    sum += IPPROTO_ICMPV6;
 
     /* ICMPv6 header */
     sum += ones_complement((uint16_t *)icmp6_hdr, ntohs(ip6_hdr->ip6_plen));
