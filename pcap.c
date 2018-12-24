@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <pcap/pcap.h>
 #include "tz_offset.h"
 #include "print_packet.h"
@@ -31,6 +32,8 @@ int main(int argc, char *argv[])
     uint8_t user[32]; /* Maybe enough size for now. */
     int cnt = -1; /* infinity */
 
+    setbuf(stdout, NULL);
+
     switch(argc)
     {
         case 2:
@@ -45,7 +48,8 @@ int main(int argc, char *argv[])
             usage(argv[0]);
             return EXIT_FAILURE;
     }
-
+    
+    tzset();
     g_timezone_offset = tz_offset();
 
     pcap = pcap_create(device, errbuf);
